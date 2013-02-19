@@ -1,7 +1,6 @@
 Fireplace
 =========
-
-<p align=center><img src="https://raw.github.com/ryansturmer/fireplace/master/screenshot.gif"></p>
+<img src="https://raw.github.com/ryansturmer/fireplace/master/screenshot.gif">
 
 It is dangerous to go alone.  Take this.
 
