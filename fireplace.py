@@ -3,10 +3,17 @@ import wx
 from math import sqrt, pi, exp
 import random
 
-COLOR1 = '#660000' 
-COLOR2 = '#ffcc00'
-COLOR3 = '#ff9900'
-COLOR4 = '#ffcc66'
+def name2rgb(name):
+    name = name.strip(' #')
+    r = int(name[0:2],16)
+    g = int(name[2:4],16)
+    b = int(name[4:6],16)
+    return r,g,b
+
+COLOR1 = name2rgb('#000066') 
+COLOR2 = name2rgb('#00ccff')
+COLOR3 = name2rgb('#0099ff')
+COLOR4 = name2rgb('#66ccff')
 
 class PixelPanel(wx.Panel):
     def __init__(self, parent, size):
@@ -29,6 +36,7 @@ class PixelPanel(wx.Panel):
         if self.i < 20:
             self.save(dc, 'fire_%05d.png' % self.i)
         self.i+=1
+
     def save(self, dc, filename):
         # based largely on code posted to wxpython-users by Andrea Gavana 2006-11-08
         size = dc.Size
@@ -62,17 +70,13 @@ class PixelPanel(wx.Panel):
         j=0
         for row in range(ph):
             for col in range(pw):
-                color = wx.Colour()
                 cell = self.image[row][col]
-                color.SetFromName(cell)
+                color = wx.Colour(*cell)
                 dc.SetBrush(wx.Brush(color))
                 dc.SetPen(wx.Pen(color))
                 dc.DrawRectangle(cw*col, ch*row, cw, ch)
 def rand():
     return 2*random.random()-1.0
-
-CENTER1 = 0.5
-CENTER2 = -0.5
 
 def all_the_clamps(x, a,b):
     if x < a:
@@ -81,75 +85,90 @@ def all_the_clamps(x, a,b):
         return b
     return x
 
-# center: -1.0 to 1.0 (far left to far right)
-# max_height: Maximum hight (0 to 100% of rows)
-# cols: number of columns in the fire
-# rows: number of rows in the fire
-# sigma: science factor - try 1.0
-def heights(cols, rows, sigma=1.0, center=0.0, max_height=1.0):
-    MU = center
-    A = 0.5*(sigma*sqrt(2*pi))
-    B = MU
-    C = sigma
-    gauss = lambda x : A*exp(-((x-B)*(x-B))/(2*C*C))
-    height = lambda col : int(max_height*rows*gauss(2*((float(col)/cols) - 0.5)))
-    retval = []
-    for i in range(cols):
-        retval.append(height(i))
-    return retval
-
 def combine(a,b):
     return [ai+bi for ai,bi in zip(a,b)]
 
-def gauss_fire(w,h, starting_point=None):
-    global CENTER1,CENTER2
-    SIGMA = 0.4
-    #MU = rand()
-    CENTER1 = all_the_clamps(CENTER1 + rand()/10.0, -0.75, 0.75)
-    CENTER2 = all_the_clamps(CENTER2 + rand()/10.0, -0.75, 0.75)
-    retval = starting_point or [['#000000' for i in range(w)] for j in range(h)]
+class GaussBurner(object):
+    def __init__(self, w,h,starting_point=None,sigma=0.4,center1=0.5,center2=-0.5):
+        self.w = w
+        self.h = h
+        self.starting_point = starting_point
+        self.center1 = center1
+        self.center2 = center2
+        self.retval = starting_point or [[(0,0,0) for i in range(w)] for j in range(h)]
+        self.sigma = sigma
 
-    heights1 = heights(w,h,SIGMA,CENTER1, max_height=0.75)
-    heights2 = heights(w,h,SIGMA,CENTER2, max_height=0.75)
-    #heights2=[0]*w
-    flame = combine(heights1,heights2)
-    
-    for col, height in enumerate(flame):
+    def blank(self):
+        for i in range(self.h):
+            for j in range(self.w):
+                self.retval[i][j] = self.starting_point[i][j] if self.starting_point else (0,0,0)
 
-        for row in range(int(height*1.3) + random.choice(range(-2,3))):
-            retval[int(h-row-1)][col] = COLOR1
+    def clamp(self, x, a,b):
+        if x < a:
+            return a
+        if x > b:
+            return b
+        return x
+
+    # center: -1.0 to 1.0 (far left to far right)
+    # max_height: Maximum hight (0 to 100% of rows)
+    # cols: number of columns in the fire
+    # rows: number of rows in the fire
+    # sigma: science factor - try 1.0
+    def heights(self, center=0.0, max_height=1.0):
+        MU = center
+        A = 0.5*(self.sigma*sqrt(2*pi))
+        B = MU
+        C = self.sigma
+        gauss = lambda x : A*exp(-((x-B)*(x-B))/(2*C*C))
+        height = lambda col : int(max_height*self.h*gauss(2*((float(col)/self.w) - 0.5)))
+        retval = []
+        for i in range(self.w):
+            retval.append(height(i))
+        return retval
+
+
+    def burn(self):
         
-        for row in range(height + random.choice(range(-1,2))):
-            retval[int(h-row-1)][col] = COLOR2
+        self.blank()
 
-        for row in range(int(0.75*height) + random.choice(range(-1,2))):
-            retval[int(h-row-1)][col] = COLOR3
+        self.center1 = self.clamp(self.center1 + rand()/10.0, -0.75, 0.75)
+        self.center2 = self.clamp(self.center2 + rand()/10.0, -0.75, 0.75)
         
-        for row in range(int(0.25*height) + random.choice(range(-1,2))):
-            retval[int(h-row-1)][col] = COLOR4
+        heights1 = self.heights(self.center1, max_height=0.75)
+        heights2 = self.heights(self.center2, max_height=0.75)
+        flame = combine(heights1,heights2)
+        
+        for col, height in enumerate(flame):
 
-    return retval
+            for row in range(int(height*1.3) + random.choice(range(-2,3))):
+                self.retval[int(self.h-row-1)][col] = COLOR1
+            
+            for row in range(height + random.choice(range(-1,2))):
+                self.retval[int(self.h-row-1)][col] = COLOR2
 
-#DIMS = (48,48)
-#DIMS = (32,32)
-DIMS = (16,16)
-#DIMS = (24, 24)
-#DIMS = (12, 12)
-FIRE_FUNCTION = gauss_fire
-DARK = '#ff3300'
+            for row in range(int(0.75*height) + random.choice(range(-1,2))):
+                self.retval[int(self.h-row-1)][col] = COLOR3
+            
+            for row in range(int(0.25*height) + random.choice(range(-1,2))):
+                self.retval[int(self.h-row-1)][col] = COLOR4
+
+        return self.retval
+
+burner = GaussBurner(16,16)
 
 if __name__ == "__main__":
     app = wx.App(False)
     frame = wx.Frame(None)
-    panel = PixelPanel(frame, DIMS)
-    panel.set_image(FIRE_FUNCTION(*DIMS))
+    panel = PixelPanel(frame, (burner.w,burner.h))
+    panel.set_image(burner.burn())
     
-    frame.SetSize((480,480))
+    frame.SetSize((16,16))
     frame.SetTitle("Fireplace")
     frame.Show(True)
     
     def update_fire(evt):
-        image = FIRE_FUNCTION(DIMS[0],DIMS[1])
+        image = burner.burn() 
         panel.set_image(image)
         panel.Refresh()
     
