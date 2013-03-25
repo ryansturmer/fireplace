@@ -3,6 +3,11 @@ import wx
 from math import sqrt, pi, exp
 import random
 
+COLOR1 = '#660000' 
+COLOR2 = '#ffcc00'
+COLOR3 = '#ff9900'
+COLOR4 = '#ffcc66'
+
 class PixelPanel(wx.Panel):
     def __init__(self, parent, size):
         self.size = size
@@ -21,6 +26,32 @@ class PixelPanel(wx.Panel):
     def on_paint(self, evt):
         dc = wx.AutoBufferedPaintDC(self)
         self.draw(dc)
+        if self.i < 20:
+            self.save(dc, 'fire_%05d.png' % self.i)
+        self.i+=1
+    def save(self, dc, filename):
+        # based largely on code posted to wxpython-users by Andrea Gavana 2006-11-08
+        size = dc.Size
+
+        bmp = wx.EmptyBitmap(size.width, size.height)
+
+        memDC = wx.MemoryDC()
+
+        memDC.SelectObject(bmp)
+
+        memDC.Blit( 0, # Copy to this X coordinate
+            0, # Copy to this Y coordinate
+            size.width, # Copy this width
+            size.height, # Copy this height
+            dc, # From where do we copy?
+            0, # What's the X offset in the original DC?
+            0  # What's the Y offset in the original DC?
+            )
+
+        memDC.SelectObject(wx.NullBitmap)
+
+        img = bmp.ConvertToImage()
+        img.SaveFile(filename, wx.BITMAP_TYPE_PNG)
 
     def draw(self, dc):
         w,h = dc.GetSize()
@@ -86,32 +117,33 @@ def gauss_fire(w,h, starting_point=None):
     for col, height in enumerate(flame):
 
         for row in range(int(height*1.3) + random.choice(range(-2,3))):
-            retval[int(h-row-1)][col] = '#660000'
+            retval[int(h-row-1)][col] = COLOR1
         
         for row in range(height + random.choice(range(-1,2))):
-            retval[int(h-row-1)][col] = '#ffcc00'
+            retval[int(h-row-1)][col] = COLOR2
 
         for row in range(int(0.75*height) + random.choice(range(-1,2))):
-            retval[int(h-row-1)][col] = '#ff9900'
+            retval[int(h-row-1)][col] = COLOR3
         
         for row in range(int(0.25*height) + random.choice(range(-1,2))):
-            retval[int(h-row-1)][col] = '#ffcc66'
+            retval[int(h-row-1)][col] = COLOR4
 
     return retval
 
 #DIMS = (48,48)
 #DIMS = (32,32)
-#DIMS = (16,16)
+DIMS = (16,16)
 #DIMS = (24, 24)
-DIMS = (16, 16)
+#DIMS = (12, 12)
 FIRE_FUNCTION = gauss_fire
 DARK = '#ff3300'
+
 if __name__ == "__main__":
     app = wx.App(False)
     frame = wx.Frame(None)
     panel = PixelPanel(frame, DIMS)
     panel.set_image(FIRE_FUNCTION(*DIMS))
-    panel.SetBackgroundColour(wx.RED)
+    
     frame.SetSize((480,480))
     frame.SetTitle("Fireplace")
     frame.Show(True)
@@ -120,6 +152,7 @@ if __name__ == "__main__":
         image = FIRE_FUNCTION(DIMS[0],DIMS[1])
         panel.set_image(image)
         panel.Refresh()
+    
     timer = wx.Timer(panel)
     panel.Bind(wx.EVT_TIMER, update_fire, timer)
     timer.Start(100)
