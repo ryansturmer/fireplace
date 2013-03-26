@@ -10,10 +10,10 @@ def name2rgb(name):
     b = int(name[4:6],16)
     return r,g,b
 
-COLOR1 = name2rgb('#000066') 
-COLOR2 = name2rgb('#00ccff')
-COLOR3 = name2rgb('#0099ff')
-COLOR4 = name2rgb('#66ccff')
+COLOR1 = name2rgb('#660000') 
+COLOR2 = name2rgb('#ffcc00')
+COLOR3 = name2rgb('#ff9900')
+COLOR4 = name2rgb('#ffcc66')
 
 class PixelPanel(wx.Panel):
     def __init__(self, parent, size):
@@ -163,7 +163,7 @@ if __name__ == "__main__":
     panel = PixelPanel(frame, (burner.w,burner.h))
     panel.set_image(burner.burn())
     
-    frame.SetSize((16,16))
+    frame.SetSize((128,128))
     frame.SetTitle("Fireplace")
     frame.Show(True)
     
