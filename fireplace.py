@@ -10,6 +10,7 @@ def name2rgb(name):
     b = int(name[4:6],16)
     return r,g,b
 
+COLOR0 = name2rgb('#000000')
 COLOR1 = name2rgb('#660000') 
 COLOR2 = name2rgb('#ffcc00')
 COLOR3 = name2rgb('#ff9900')
@@ -89,19 +90,20 @@ def combine(a,b):
     return [ai+bi for ai,bi in zip(a,b)]
 
 class GaussBurner(object):
-    def __init__(self, w,h,starting_point=None,sigma=0.4,center1=0.5,center2=-0.5):
+    def __init__(self, w,h,starting_point=None,sigma=0.4,center1=0.5,center2=-0.5, colors=None):
+        self.colors = colors or [COLOR0, COLOR1, COLOR2, COLOR3, COLOR4]
         self.w = w
         self.h = h
         self.starting_point = starting_point
         self.center1 = center1
         self.center2 = center2
-        self.retval = starting_point or [[(0,0,0) for i in range(w)] for j in range(h)]
+        self.retval = starting_point or [[self.colors[0] for i in range(w)] for j in range(h)]
         self.sigma = sigma
 
     def blank(self):
         for i in range(self.h):
             for j in range(self.w):
-                self.retval[i][j] = self.starting_point[i][j] if self.starting_point else (0,0,0)
+                self.retval[i][j] = self.starting_point[i][j] if self.starting_point else self.colors[0] 
 
     def clamp(self, x, a,b):
         if x < a:
@@ -142,16 +144,16 @@ class GaussBurner(object):
         for col, height in enumerate(flame):
 
             for row in range(int(height*1.3) + random.choice(range(-2,3))):
-                self.retval[int(self.h-row-1)][col] = COLOR1
+                self.retval[int(self.h-row-1)][col] = self.colors[0]
             
             for row in range(height + random.choice(range(-1,2))):
-                self.retval[int(self.h-row-1)][col] = COLOR2
+                self.retval[int(self.h-row-1)][col] = self.colors[1]
 
             for row in range(int(0.75*height) + random.choice(range(-1,2))):
-                self.retval[int(self.h-row-1)][col] = COLOR3
+                self.retval[int(self.h-row-1)][col] = self.colors[2]
             
             for row in range(int(0.25*height) + random.choice(range(-1,2))):
-                self.retval[int(self.h-row-1)][col] = COLOR4
+                self.retval[int(self.h-row-1)][col] = self.colors[3]
 
         return self.retval
 
